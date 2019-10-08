@@ -1,3 +1,4 @@
 .idea/
 web-register.iml
 target/
+src/main/resources/
