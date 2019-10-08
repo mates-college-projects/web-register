@@ -8,5 +8,21 @@
     <artifactId>web-register</artifactId>
     <version>1.0</version>
 
-    
+    <properties>
+        <maven.compiler.source>1.10</maven.compiler.source>
+        <maven.compiler.target>1.10</maven.compiler.target>
+    </properties>
+
+    <packaging>war</packaging>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+            <version>3.28.0</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+
 </project>
