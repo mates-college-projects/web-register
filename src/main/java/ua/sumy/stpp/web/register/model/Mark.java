@@ -1,5 +1,6 @@
 package ua.sumy.stpp.web.register.model;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -8,7 +9,10 @@ public class Mark {
     private int id = -1;
 
     private int studentId;
+    private int groupId;
     private int subjectId;
+
+    private Date setDate;
 
     private int value;
 
@@ -16,9 +20,11 @@ public class Mark {
 
     }
 
-    public Mark(int studentId, int subjectId, int value) {
+    public Mark(int studentId, int groupId, int subjectId, Date setDate, int value) {
         this.studentId = studentId;
+        this.groupId = groupId;
         this.subjectId = subjectId;
+        this.setDate = setDate;
         this.value = value;
     }
 
@@ -80,5 +86,21 @@ public class Mark {
         stringMarks.put(7, "зачет"); // зар.
         stringMarks.put(9, "освобожден"); // зв.
         return stringMarks.getOrDefault(value, "вместо оценки расписывали ручку");
+    }
+
+    public Date getSetDate() {
+        return setDate;
+    }
+
+    public void setSetDate(Date setDate) {
+        this.setDate = setDate;
+    }
+
+    public int getGroupId() {
+        return groupId;
+    }
+
+    public void setGroupId(int groupId) {
+        this.groupId = groupId;
     }
 }
