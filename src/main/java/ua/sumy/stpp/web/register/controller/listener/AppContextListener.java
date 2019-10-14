@@ -1,6 +1,6 @@
 package ua.sumy.stpp.web.register.controller.listener;
 
-import ua.sumy.stpp.web.register.DbConnectionManager;
+import ua.sumy.stpp.web.register.DbDataSourceProvider;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -16,22 +16,9 @@ public class AppContextListener implements ServletContextListener {
     public void contextInitialized(ServletContextEvent servletContextEvent) {
         ServletContext context = servletContextEvent.getServletContext();
 
-        String url = context.getInitParameter("DBURL");
-        String user = context.getInitParameter("DBUSER");
-        String password = context.getInitParameter("DBPWD");
-
-        DbConnectionManager dbManager = new DbConnectionManager(url, user, password);
-        context.setAttribute("DBManager", dbManager);
+        DbDataSourceProvider dbManager = new DbDataSourceProvider(":resource:database.db");
+        context.setAttribute("DbDataSourceProvider", dbManager);
 
         log.info("Database connection initialized.");
-    }
-
-    @Override
-    public void contextDestroyed(ServletContextEvent servletContextEvent) {
-        ServletContext context = servletContextEvent.getServletContext();
-        DbConnectionManager dbManager = (DbConnectionManager) context.getAttribute("DBManager");
-        dbManager.closeConnection();
-
-        log.info("Database connection closed.");
     }
 }

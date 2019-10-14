@@ -6,14 +6,14 @@ import javax.sql.DataSource;
 import java.util.Objects;
 import java.util.logging.Logger;
 
-public class DbDataSourceManager {
-    private final static Logger log = Logger.getLogger(DbDataSourceManager.class.getName());
+public class DbDataSourceProvider {
+    private final static Logger log = Logger.getLogger(DbDataSourceProvider.class.getName());
 
     private final String dbPath;
 
     private SQLiteDataSource dataSource;
 
-    public DbDataSourceManager(String dbPath) {
+    public DbDataSourceProvider(String dbPath) {
         this.dbPath = dbPath;
     }
 
