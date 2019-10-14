@@ -25,6 +25,13 @@ public class StudentDao {
     }
 
     public int createStudent(String name, Date birthDate, String homeAddress, Group group) {
+        Optional<Student> existingStudent = getStudent(name, group);
+        if (existingStudent.isPresent()) {
+            log.warning(String.format("Trying to create already existing student %s (%s) from %s in group %s.",
+                    name, birthDate.toString(), homeAddress, group));
+            return existingStudent.get().getId();
+        }
+
         String query = "INSERT INTO students (name, birth_date, home_address, group) VALUES (?, ?, ?, ?)";
 
         int createdStudentId = -1;
@@ -78,15 +85,16 @@ public class StudentDao {
         return student;
     }
 
-    public Student getStudent(String name) {
+    public Optional<Student> getStudent(String name, Group group) {
         Student foundStudent = null;
 
-        String query = "SELECT id, name, birth_date, home_address, group FROM students WHERE name=?";
+        String query = "SELECT id, name, birth_date, home_address, group FROM students WHERE name=? AND group=?";
         try (Connection connection = dataSource.getConnection();
             PreparedStatement statement = connection.prepareStatement(query)) {
             connection.setAutoCommit(false);
 
             statement.setString(1, name);
+            statement.setInt(2, group.getId());
             foundStudent = fetchStudent(statement);
 
             connection.commit();
@@ -94,10 +102,10 @@ public class StudentDao {
             log.severe(String.format("Error working with database: %s.", e.getMessage()));
         }
 
-        return foundStudent;
+        return Optional.ofNullable(foundStudent);
     }
 
-    public Student getStudent(int studentId) {
+    public Optional<Student> getStudent(int studentId) {
         Student foundStudent = null;
 
         String query = "SELECT id, name, birth_date, home_address, group FROM students WHERE id=?";
@@ -113,7 +121,7 @@ public class StudentDao {
             log.severe(String.format("Error working with database: %s.", e.getMessage()));
         }
 
-        return foundStudent;
+        return Optional.ofNullable(foundStudent);
     }
 
     private void fetchStudents(List<Student> students, PreparedStatement statement) throws SQLException {
@@ -210,8 +218,8 @@ public class StudentDao {
     }
 
     public boolean deleteStudent(int studentId) {
-        Student existingStudent = getStudent(studentId);
-        if (Objects.isNull(existingStudent)) {
+        Optional<Student> existingStudent = getStudent(studentId);
+        if (existingStudent.isEmpty()) {
             log.severe(String.format("Trying to delete not existing student by id: %d.", studentId));
             return false;
         }
