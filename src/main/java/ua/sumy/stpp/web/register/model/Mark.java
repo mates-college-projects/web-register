@@ -14,10 +14,14 @@ public class Mark {
 
     private Date setDate;
 
-    private int value;
+    private double value;
 
     public Mark() {
 
+    }
+
+    public Mark(double value) {
+        this.value = value;
     }
 
     public Mark(int studentId, int groupId, int subjectId, Date setDate, int value) {
@@ -52,11 +56,11 @@ public class Mark {
         this.subjectId = subjectId;
     }
 
-    public int getValue() {
+    public double getValue() {
         return value;
     }
 
-    public void setValue(int value) {
+    public void setValue(double value) {
         this.value = value;
     }
 
