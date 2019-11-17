@@ -7,8 +7,11 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class SubjectDao {
@@ -18,18 +21,17 @@ public class SubjectDao {
 
     public SubjectDao(DataSource dataSource) {
         this.dataSource = dataSource;
+        log.setLevel(Level.FINE);
     }
 
-    public int createSubject(String name) {
+    public void createSubject(String name) {
         Optional<Subject> existingSubject = getSubject(name);
         if (existingSubject.isPresent()) {
             log.warning(String.format("Trying to create already existing subject %s.", name));
-            return existingSubject.get().getId();
+            return;
         }
 
-        int createdSubjectId = -1;
-
-        String query = "INSERT INTO subjects (name) VALUES (?)";
+        String query = "INSERT INTO `subjects` (name) VALUES (?)";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
             connection.setAutoCommit(false);
@@ -41,27 +43,18 @@ public class SubjectDao {
                 log.severe("Error creating new subject, no rows affected!");
             } else {
                 log.fine("Subject successfully created!");
-                try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        createdSubjectId = generatedKeys.getInt("id");
-                    } else {
-                        log.severe("Error creating subject, got no id.");
-                    }
-                }
             }
 
             connection.commit();
         } catch (SQLException e) {
             log.severe(String.format("Error working with database: %s.", e.getMessage()));
         }
-
-        return createdSubjectId;
     }
 
     public Optional<Subject> getSubject(int id) {
         Subject foundSubject = null;
 
-        String query = "SELECT id, name FROM subjects WHERE id=?";
+        String query = "SELECT `subject_id`, `name` FROM `subjects` WHERE `subject_id`=?";
         try (Connection connection = dataSource.getConnection();
             PreparedStatement statement = connection.prepareStatement(query)) {
             connection.setAutoCommit(false);
@@ -69,9 +62,9 @@ public class SubjectDao {
             statement.setInt(1, id);
 
             try (ResultSet result = statement.executeQuery()) {
-                if (result.first()) {
+                if (result.next()) {
                     foundSubject = new Subject();
-                    foundSubject.setId(result.getInt("id"));
+                    foundSubject.setId(result.getInt("subject_id"));
                     foundSubject.setName(result.getString("name"));
                 }
             }
@@ -87,7 +80,7 @@ public class SubjectDao {
     public Optional<Subject> getSubject(String name) {
         Subject foundSubject = null;
 
-        String query = "SELECT id, name FROM subjects WHERE name=?";
+        String query = "SELECT subject_id, name FROM `subjects` WHERE name=?";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
             connection.setAutoCommit(false);
@@ -95,9 +88,9 @@ public class SubjectDao {
             statement.setString(1, name);
 
             try (ResultSet result = statement.executeQuery()) {
-                if (result.first()) {
+                if (result.next()) {
                     foundSubject = new Subject();
-                    foundSubject.setId(result.getInt("id"));
+                    foundSubject.setId(result.getInt("subject_id"));
                     foundSubject.setName(result.getString("name"));
                 }
             }
@@ -110,6 +103,26 @@ public class SubjectDao {
         return Optional.ofNullable(foundSubject);
     }
 
+    public Set<Subject> getAllSubjects() {
+        Set<Subject> subjects = new HashSet<>();
+
+        String query = "SELECT subject_id, name FROM `subjects`";
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query);
+             ResultSet result = statement.executeQuery()) {
+            while (result.next()) {
+                Subject subject = new Subject();
+                subject.setId(result.getInt("subject_id"));
+                subject.setName(result.getString("name"));
+                subjects.add(subject);
+            }
+        } catch (SQLException e) {
+            log.severe(String.format("Error working with database: %s.", e.getMessage()));
+        }
+
+        return subjects;
+    }
+
     public boolean deleteSubject(int id) {
         Optional<Subject> existingSubject = getSubject(id);
         if (existingSubject.isEmpty()) {
@@ -119,7 +132,7 @@ public class SubjectDao {
 
         boolean deleted = false;
 
-        String query = "DELETE FROM subjects WHERE id=?";
+        String query = "DELETE FROM `subjects` WHERE subject_id=?";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
             connection.setAutoCommit(false);

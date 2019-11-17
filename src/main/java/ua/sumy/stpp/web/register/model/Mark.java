@@ -17,7 +17,7 @@ public class Mark {
     private double value;
 
     public Mark() {
-
+        this.value = 0;
     }
 
     public Mark(double value) {
@@ -83,13 +83,13 @@ public class Mark {
     @Override
     public String toString() {
         Map<Integer, String> stringMarks = new HashMap<>();
-        stringMarks.put(2, "плохо");
-        stringMarks.put(3, "не оч");
-        stringMarks.put(4, "норм");
-        stringMarks.put(5, "збс");
-        stringMarks.put(7, "зачет"); // зар.
-        stringMarks.put(9, "освобожден"); // зв.
-        return stringMarks.getOrDefault(value, "вместо оценки расписывали ручку");
+        stringMarks.put(2, "незадовільно");
+        stringMarks.put(3, "задовільно");
+        stringMarks.put(4, "добре");
+        stringMarks.put(5, "відмінно");
+        stringMarks.put(7, "зар."); // зар.
+        stringMarks.put(9, "зв."); // зв.
+        return stringMarks.getOrDefault(value, "немає оцінки");
     }
 
     public Date getSetDate() {

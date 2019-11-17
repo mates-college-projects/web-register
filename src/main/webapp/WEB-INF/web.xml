@@ -7,15 +7,25 @@
 
   <display-name>Web Register</display-name>
 
-<!--  <servlet>-->
-<!--    <servlet-name>StudentsServlet</servlet-name>-->
-<!--    <servlet-class>ua.sumy.stpp.web.register.controller.servlet.StudentsServlet</servlet-class>-->
-<!--    <load-on-startup>1</load-on-startup>-->
-<!--  </servlet>-->
+  <filter>
+    <filter-name>CharsetFilter</filter-name>
+    <filter-class>ua.sumy.stpp.web.register.controller.filter.CharsetFilter</filter-class>
+    <init-param>
+      <param-name>requestEncoding</param-name>
+      <param-value>UTF-8</param-value>
+    </init-param>
+  </filter>
 
-<!--  <servlet-mapping>-->
-<!--    <servlet-name>StudentsServlet</servlet-name>-->
-<!--    <url-pattern>/students</url-pattern>-->
-<!--  </servlet-mapping>-->
+  <filter-mapping>
+    <filter-name>CharsetFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+
+  <jsp-config>
+    <jsp-property-group>
+      <url-pattern>*.jsp</url-pattern>
+      <page-encoding>UTF-8</page-encoding>
+    </jsp-property-group>
+  </jsp-config>
 
 </web-app>

@@ -4,19 +4,19 @@ import ua.sumy.stpp.web.register.model.Group;
 import ua.sumy.stpp.web.register.model.Student;
 
 import javax.sql.DataSource;
-import java.sql.*;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.Date;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Logger;
 
 public class StudentDao {
     public static final int MAX_STUDENT_COUNT = 120;
 
     private static final Logger log = Logger.getLogger(StudentDao.class.getName());
-    private static final DateFormat dateFormat = new SimpleDateFormat("dd/mm/yy");
 
     private final DataSource dataSource;
 
@@ -24,62 +24,45 @@ public class StudentDao {
         this.dataSource = dataSource;
     }
 
-    public int createStudent(String name, Date birthDate, String homeAddress, Group group) {
+    public void createStudent(String name, Group group) {
         Optional<Student> existingStudent = getStudent(name, group);
         if (existingStudent.isPresent()) {
-            log.warning(String.format("Trying to create already existing student %s (%s) from %s in group %s.",
-                    name, birthDate.toString(), homeAddress, group));
-            return existingStudent.get().getId();
+            log.warning(String.format("Trying to create already existing student %s from group %s.", name, group));
+            return;
         }
 
-        String query = "INSERT INTO students (name, birth_date, home_address, group) VALUES (?, ?, ?, ?)";
+        String query = "INSERT INTO students (name, group_id) VALUES (?, ?)";
 
-        int createdStudentId = -1;
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
             connection.setAutoCommit(false);
 
             statement.setString(1, name);
-            statement.setString(2, dateFormat.format(dateFormat));
-            statement.setString(3, homeAddress);
-            statement.setInt(4, group.getId());
+            statement.setInt(2, group.getId());
 
             int rowsAffected = statement.executeUpdate();
             if (rowsAffected == 0) {
                 log.severe("Error creating new student, no rows affected!");
             } else {
                 log.fine("Student successfully created!");
-                try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        createdStudentId = generatedKeys.getInt("id");
-                    } else {
-                        log.severe("Error creating student, got no id.");
-                    }
-                }
             }
 
             connection.commit();
         } catch (SQLException e) {
             log.severe(String.format("Error working with database: %s.", e.getMessage()));
         }
-
-        return createdStudentId;
     }
 
     private Student fetchStudent(PreparedStatement statement) throws SQLException {
         Student student = null;
 
         try (ResultSet result = statement.executeQuery()) {
-            if (result.first()) {
+            if (result.next()) {
                 student = new Student();
-                student.setId(result.getInt("id"));
+                student.setId(result.getInt("student_id"));
                 student.setName(result.getString("name"));
-                student.setBirthDate(dateFormat.parse(result.getString("birth_date")));
-                student.setHomeAddress(result.getString("home_address"));
-                student.setGroupId(result.getInt("group"));
+                student.setGroupId(result.getInt("group_id"));
             }
-        } catch (ParseException e) {
-            log.warning(String.format("Error parsing student's birth date: %s.", e.getMessage()));
         }
 
         return student;
@@ -88,7 +71,7 @@ public class StudentDao {
     public Optional<Student> getStudent(String name, Group group) {
         Student foundStudent = null;
 
-        String query = "SELECT id, name, birth_date, home_address, group FROM students WHERE name=? AND group=?";
+        String query = "SELECT student_id, name, group_id FROM `students` WHERE name=? AND group_id=?";
         try (Connection connection = dataSource.getConnection();
             PreparedStatement statement = connection.prepareStatement(query)) {
             connection.setAutoCommit(false);
@@ -108,7 +91,7 @@ public class StudentDao {
     public Optional<Student> getStudent(int studentId) {
         Student foundStudent = null;
 
-        String query = "SELECT id, name, birth_date, home_address, group FROM students WHERE id=?";
+        String query = "SELECT student_id, name, group_id FROM `students` WHERE student_id=?";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
             connection.setAutoCommit(false);
@@ -124,26 +107,22 @@ public class StudentDao {
         return Optional.ofNullable(foundStudent);
     }
 
-    private void fetchStudents(List<Student> students, PreparedStatement statement) throws SQLException {
+    private void fetchStudents(Set<Student> students, PreparedStatement statement) throws SQLException {
         try (ResultSet result = statement.executeQuery()) {
             while (result.next()) {
                 Student student = new Student();
-                student.setId(result.getInt("id"));
+                student.setId(result.getInt("student_id"));
                 student.setName(result.getString("name"));
-                student.setBirthDate(dateFormat.parse(result.getString("birth_date")));
-                student.setHomeAddress(result.getString("home_address"));
-                student.setGroupId(result.getInt("group"));
+                student.setGroupId(result.getInt("group_id"));
                 students.add(student);
             }
-        } catch (ParseException e) {
-            log.warning(String.format("Error parsing student's birth date: %s.", e.getMessage()));
         }
     }
 
-    public List<Student> getGroupStudents(int groupId) {
-        List<Student> groupStudents = new LinkedList<>();
+    public Set<Student> getGroupStudents(int groupId) {
+        Set<Student> groupStudents = new HashSet<>();
 
-        String query = "SELECT id, name, birth_date, home_address, group FROM students WHERE group=?";
+        String query = "SELECT student_id, name, group_id FROM `students` WHERE group_id=?";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
             connection.setAutoCommit(false);
@@ -159,16 +138,16 @@ public class StudentDao {
         return groupStudents;
     }
 
-    public List<Student> getStudents(int count, int offset) {
+    public Set<Student> getStudents(int count, int offset) {
         if (count > MAX_STUDENT_COUNT) {
             log.severe(String.format("Trying to get more than allowed students: %d > %d.", count, MAX_STUDENT_COUNT));
             log.info("Fetching maximum allowed students instead.");
             count = MAX_STUDENT_COUNT;
         }
 
-        List<Student> students = new ArrayList<>(count);
+        Set<Student> students = new HashSet<>(count);
 
-        String query = "SELECT id, name, birth_date, home_address, group FROM students LIMIT ? OFFSET ?";
+        String query = "SELECT student_id, name, group_id FROM `students` LIMIT ? OFFSET ?";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
             connection.setAutoCommit(false);
@@ -189,16 +168,14 @@ public class StudentDao {
         // we assume new student info is really *new*
         boolean updated = false;
 
-        String query = "UPDATE students SET name=?, birth_date=?, home_address=?, group=? WHERE id=?";
+        String query = "UPDATE `students` SET name=?, group_id=? WHERE student_id=?";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
             connection.setAutoCommit(false);
 
             statement.setString(1, newStudentInfo.getName());
-            statement.setString(2, dateFormat.format(newStudentInfo.getBirthDate()));
-            statement.setString(3, newStudentInfo.getHomeAddress());
-            statement.setInt(4, newStudentInfo.getGroupId());
-            statement.setInt(5, newStudentInfo.getId());
+            statement.setInt(2, newStudentInfo.getGroupId());
+            statement.setInt(3, newStudentInfo.getId());
 
             int rowsAffected = statement.executeUpdate();
             if (rowsAffected == 0) {
@@ -226,7 +203,7 @@ public class StudentDao {
 
         boolean deleted = false;
 
-        String query = "DELETE FROM students WHERE id=?";
+        String query = "DELETE FROM `students` WHERE student_id=?";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
             connection.setAutoCommit(false);

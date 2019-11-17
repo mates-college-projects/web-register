@@ -3,11 +3,10 @@ package ua.sumy.stpp.web.register.dao;
 import ua.sumy.stpp.web.register.model.Group;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
@@ -20,16 +19,14 @@ public class GroupDao {
         this.dataSource = dataSource;
     }
 
-    public int createGroup(String code) {
+    public void createGroup(String code) {
         Optional<Group> existingGroup = getGroup(code);
         if (existingGroup.isPresent()) {
             log.warning(String.format("Trying to create a group with already used code %s.", code));
-            return existingGroup.get().getId();
+            return;
         }
 
-        int createdGroupId = -1;
-
-        String query = "INSERT INTO groups (code) VALUES (?)";
+        String query = "INSERT INTO `groups` (code) VALUES (?)";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
             connection.setAutoCommit(false);
@@ -39,28 +36,19 @@ public class GroupDao {
             if (rowsAffected == 0) {
                 log.severe("Error creating new student, no rows affected!");
             } else {
-                log.fine("Student successfully created!");
-                try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        createdGroupId = generatedKeys.getInt("id");
-                    } else {
-                        log.severe("Error creating group, got no id.");
-                    }
-                }
+                log.fine("Group successfully created!");
             }
 
             connection.commit();
         } catch (SQLException e) {
             log.severe(String.format("Error working with database: %s.", e.getMessage()));
         }
-
-        return createdGroupId;
     }
 
     public Optional<Group> getGroup(int id) {
         Group group = null;
 
-        String query = "SELECT id, code FROM groups WHERE id=?";
+        String query = "SELECT group_id, code FROM `groups` WHERE group_id=?";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
             connection.setAutoCommit(false);
@@ -68,9 +56,9 @@ public class GroupDao {
             statement.setInt(1, id);
 
             try (ResultSet result = statement.executeQuery()) {
-                if (result.first()) {
+                if (result.next()) {
                     group = new Group();
-                    group.setId(result.getInt("id"));
+                    group.setId(result.getInt("group_id"));
                     group.setCode(result.getString("code"));
                 }
             }
@@ -86,7 +74,7 @@ public class GroupDao {
     public Optional<Group> getGroup(String code) {
         Group group = null;
 
-        String query = "SELECT id, code FROM groups WHERE code=?";
+        String query = "SELECT group_id, code FROM `groups` WHERE code=?";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
             connection.setAutoCommit(false);
@@ -94,9 +82,9 @@ public class GroupDao {
             statement.setString(1, code);
 
             try (ResultSet result = statement.executeQuery()) {
-                if (result.first()) {
+                if (result.next()) {
                     group = new Group();
-                    group.setId(result.getInt("id"));
+                    group.setId(result.getInt("group_id"));
                     group.setCode(result.getString("code"));
                 }
             }
@@ -109,6 +97,26 @@ public class GroupDao {
         return Optional.ofNullable(group);
     }
 
+    public Set<Group> getAllGroups() {
+        Set<Group> groups = new HashSet<>();
+
+        String query = "SELECT * from `groups`";
+        try (Connection connection = dataSource.getConnection();
+             Statement statement = connection.createStatement();
+             ResultSet result = statement.executeQuery(query)) {
+            while (result.next()) {
+                Group group = new Group();
+                group.setId(result.getInt("group_id"));
+                group.setCode(result.getString("code"));
+                groups.add(group);
+            }
+        } catch (SQLException e) {
+            log.severe(String.format("Error working with database: %s.", e.getMessage()));
+        }
+
+        return groups;
+    }
+
     public boolean deleteGroup(int id) {
         Optional<Group> existingGroup = getGroup(id);
         if (existingGroup.isEmpty()) {
@@ -118,7 +126,7 @@ public class GroupDao {
 
         boolean deleted = false;
 
-        String query = "DELETE FROM groups WHERE id=?";
+        String query = "DELETE FROM `groups` WHERE group_id=?";
         try (Connection connection = dataSource.getConnection();
             PreparedStatement statement = connection.prepareStatement(query)) {
             connection.setAutoCommit(false);

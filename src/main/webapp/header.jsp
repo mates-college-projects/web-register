@@ -1,6 +1,7 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@page pageEncoding="UTF-8" contentType="text/html; charset=UTF-8"%>
 <html>
 <head>
+    <meta http-equiv='Content-Type' content='text/html; charset=UTF-8' />
     <title>Web Register</title>
     <%@ include file="bootstrap.jsp"%>
 
@@ -42,5 +43,21 @@
     <header>
         <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
             <a class="navbar-brand" href="">Web Register</a>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="students">Students</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="subjects">Subjects</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="groups">Groups</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="report">Report</a>
+                    </li>
+                </ul>
+            </div>
         </nav>
     </header>
