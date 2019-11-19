@@ -17,25 +17,23 @@ public class ReportService {
 
     public Mark calculateAbsoluteMark(List<Mark> marks) {
         final int markCount = marks.size();
-        double goodMarksSum = 0;
+        int goodMarksNumber = 0;
         for (Mark mark : marks) {
-            double currentMarkValue = mark.getValue();
-            if (currentMarkValue > 3) {
-                goodMarksSum += currentMarkValue;
+            if (mark.getValue() > 3) {
+                goodMarksNumber++;
             }
         }
-        return new Mark(goodMarksSum / markCount);
+        return new Mark(((double) goodMarksNumber * 100) / markCount);
     }
 
     public Mark calculateQualitativeMark(List<Mark> marks) {
         final int markCount = marks.size();
-        double positiveMarksSum = 0;
+        int positiveMarksNumber = 0;
         for (Mark mark : marks) {
-            double currentMarkValue = mark.getValue();
-            if (currentMarkValue > 2) {
-                positiveMarksSum += currentMarkValue;
+            if (mark.getValue() > 2) {
+                positiveMarksNumber++;
             }
         }
-        return new Mark(positiveMarksSum / markCount);
+        return new Mark(((double) positiveMarksNumber * 100) / markCount);
     }
 }
