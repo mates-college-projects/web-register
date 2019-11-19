@@ -76,7 +76,7 @@
                                 <input name="marks_<%= student.getId() %>"
                                        id="<%= j %>"
                                        type="text" class="form-control" aria-label="mark"
-                                       value="<%= mark.getValue() %>">
+                                       value="<%= Math.round(mark.getValue()) %>">
                             </td>
                             <% } %>
                             <td><%= averageMarks.get(i).getValue() %></td>
